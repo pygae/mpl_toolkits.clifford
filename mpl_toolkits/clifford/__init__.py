@@ -3,6 +3,7 @@ from typing import Iterator
 import itertools
 import collections
 import functools
+import warnings
 
 from matplotlib.artist import Artist
 from matplotlib.patches import Circle, FancyArrowPatch, Patch
@@ -132,8 +133,13 @@ class _Plotter:
         all_os = [classify.classify(cga_obj) for cga_obj in cga_objs]
         for handler, os in _groupby(all_os, lambda o: functools._find_impl(type(o), self._handlers)):
             if not handler:
-                continue  # skipped
-            yield from handler(self, os, **kwargs)
+                unsupported_msg = (\
+                    "Unable to plot any of the following objects:\n{}"
+                    .format("\n".join(" * {!r}".format(o) for o in os))
+                )
+                warnings.warn(unsupported_msg)
+            else:
+                yield from handler(self, os, **kwargs)
 
 
 class _Plotter2d(_Plotter):
@@ -317,6 +323,21 @@ class _Plotter3d(_Plotter):
             )
             self._ax.add_patch(p)
             yield p
+
+    @_handles(classify.Plane)
+    def _plot_Plane(self, os, **kwargs) -> Iterator[Artist]:
+        kwargs.setdefault('alpha', 0.5)
+        for plane in os:
+            loc = plane.location
+            dir = plane.direction
+            (a, b), sc = dir.factorise()
+
+            # todo: make this extend to the bounds of the plot area
+            points = np.sqrt(sc)*np.array([
+                [self._as_point_tuple_3d(loc - a), self._as_point_tuple_3d(loc - b)],
+                [self._as_point_tuple_3d(loc + b), self._as_point_tuple_3d(loc + a)]
+            ])
+            yield self._ax.plot_surface(*points.T, **kwargs)
 
     @_handles(classify.Sphere)
     def _plot_Sphere(self, os, **kwargs) -> Iterator[Artist]:
