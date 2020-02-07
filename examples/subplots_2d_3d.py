@@ -25,7 +25,7 @@ mpl_toolkits.clifford.plot(ax3, [(A ^ B ^ C).dual()], marker='x', color='tab:ora
 mpl_toolkits.clifford.plot(ax3, [A ^ B ^ C], color='tab:blue')
 mpl_toolkits.clifford.plot(ax3, [A ^ B ^ C ^ D], color='tab:blue')
 mpl_toolkits.clifford.plot(ax3, [A, B, C], marker='x', color='tab:red', linestyle='none')
-# mpl_toolkits.clifford.plot(ax3, [A ^ B ^ einf], color='tab:green')
+mpl_toolkits.clifford.plot(ax3, [A ^ B ^ einf], color='tab:green')
 mpl_toolkits.clifford.plot(ax3, [(A ^ B ^ C) | B], color='tab:purple')
 
 plt.show()

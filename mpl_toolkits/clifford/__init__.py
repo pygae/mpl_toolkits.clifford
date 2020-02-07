@@ -183,6 +183,40 @@ class Circle3D(Patch):
     #     self.do_3d_projection()
     #     super().draw(self, renderer)
 
+class InfiniteLine3D(art3d.Line3D):
+    """
+    3D line object.
+    """
+    def __init__(self, origin, direction, *args, **kwargs):
+        """
+        Keyword arguments are passed onto :func:`~matplotlib.lines.Line2D`.
+        """
+        super().__init__([], [], [], *args, **kwargs)
+        self._origin = np.asarray(origin)
+        self._direction = np.asarray(direction)
+
+    def draw(self, renderer):
+        mins, maxs = np.array([
+            self.axes.get_xbound(),
+            self.axes.get_ybound(),
+            self.axes.get_zbound(),
+        ]).T
+
+        min_lam = (mins - self._origin) / self._direction
+        max_lam = (maxs - self._origin) / self._direction
+
+        valid_points = []
+        for src in min_lam, max_lam:
+            for i, lam in enumerate(src):
+                i_other = [(i + 1) % 3, (i + 2) % 3]
+                p = self._origin + src[i]*self._direction
+                if (mins[i_other,] <= p[i_other,]).all() and (p[i_other,] <= maxs[i_other,]).all():
+                    valid_points.append((lam, p))
+        valid_points.sort(key=lambda t: t[0])
+        self._verts3d = np.stack((valid_points[0][1], valid_points[-1][1]), axis=-1)
+        super().draw(renderer)
+        self.scale = True
+
 
 class _Plotter3d(_Plotter):
     _handlers = {}
@@ -224,7 +258,12 @@ class _Plotter3d(_Plotter):
 
     @_handles(classify.Line)
     def _plot_Line(self, os, **kwargs) -> Iterator[Artist]:
-        raise NotImplementedError
+        for o in os:
+            l = InfiniteLine3D(
+                origin=self._as_point_tuple_3d(o.location),
+                direction=self._as_point_tuple_3d(o.direction), **kwargs)
+            self._ax.add_line(l)
+            yield l
 
     @_handles(classify.Circle)
     def _plot_Circle(self, os, **kwargs) -> Iterator[Artist]:
