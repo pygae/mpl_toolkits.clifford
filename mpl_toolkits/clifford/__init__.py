@@ -9,6 +9,7 @@ from matplotlib.patches import Circle, FancyArrowPatch, Patch
 from matplotlib.collections import PatchCollection
 from matplotlib.tri import Triangulation
 from matplotlib.path import Path
+from matplotlib.lines import Line2D
 
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d import proj3d, art3d
@@ -65,6 +66,63 @@ def _groupby(l, key=lambda x: x):
     return d.items()
 
 
+def _ray_box_intersection(origin, direction, mins, maxs):
+    n = len(origin)
+    valid_points = []
+    # ok to ignore these, the `NaN`s end up not meeting the comparison conditions
+    with np.errstate(invalid='ignore', divide='ignore'):
+        for src in mins, maxs:
+            lams = (src - origin) / direction
+            for i, lam in enumerate(lams):
+                i_other = (i + np.arange(1, n)) % n
+                p = origin + lam*direction
+                if (mins[i_other,] <= p[i_other,]).all() and (p[i_other,] <= maxs[i_other,]).all():
+                    valid_points.append((lam, p))
+    valid_points.sort(key=lambda t: t[0])
+    if valid_points:
+        return np.array([valid_points[0][1], valid_points[-1][1]])
+    else:
+        return np.empty((0, n))
+
+
+class _InfiniteLine:
+    def __init__(self, origin, direction):
+        self._origin = np.asarray(origin)
+        self._direction = np.asarray(direction)
+
+
+class InfiniteLine2D(Line2D, _InfiniteLine):
+    def __init__(self, origin, direction, *args, **kwargs):
+        Line2D.__init__(self, [], [], *args, **kwargs)
+        _InfiniteLine.__init__(self, origin, direction)
+
+    def draw(self, renderer):
+        mins, maxs = np.array([
+            self.axes.get_xbound(),
+            self.axes.get_ybound(),
+        ]).T
+
+        points = _ray_box_intersection(self._origin, self._direction, mins, maxs)
+        self.set_data(*points.T)
+        super().draw(renderer)
+
+
+class InfiniteLine3D(art3d.Line3D, _InfiniteLine):
+    def __init__(self, origin, direction, *args, **kwargs):
+        art3d.Line3D.__init__(self, [], [], [], *args, **kwargs)
+        _InfiniteLine.__init__(self, origin, direction)
+
+    def draw(self, renderer):
+        mins, maxs = np.array([
+            self.axes.get_xbound(),
+            self.axes.get_ybound(),
+            self.axes.get_zbound(),
+        ]).T
+        points = _ray_box_intersection(self._origin, self._direction, mins, maxs)
+        self._verts3d = points.T
+        super().draw(renderer)
+
+
 class _Plotter:
     def __init__(self, ax, layout):
         self._layout = layout
@@ -119,11 +177,13 @@ class _Plotter2d(_Plotter):
     @_handles(classify.Line)
     def _plot_Line(self, os, **kwargs) -> Iterator[Artist]:
         for line in os:
-            yield self._ax.axline(
-                self._as_point_tuple_2d(line.location - line.direction / 2),
-                self._as_point_tuple_2d(line.location + line.direction / 2),
+            l = InfiniteLine2D(
+                self._as_point_tuple_2d(line.location),
+                self._as_point_tuple_2d(line.direction),
                 **kwargs
             )
+            self._ax.add_line(l)
+            yield l
 
     @_handles(classify.Circle)
     def _plot_Circle(self, os, **kwargs) -> Iterator[Artist]:
@@ -183,39 +243,7 @@ class Circle3D(Patch):
     #     self.do_3d_projection()
     #     super().draw(self, renderer)
 
-class InfiniteLine3D(art3d.Line3D):
-    """
-    3D line object.
-    """
-    def __init__(self, origin, direction, *args, **kwargs):
-        """
-        Keyword arguments are passed onto :func:`~matplotlib.lines.Line2D`.
-        """
-        super().__init__([], [], [], *args, **kwargs)
-        self._origin = np.asarray(origin)
-        self._direction = np.asarray(direction)
 
-    def draw(self, renderer):
-        mins, maxs = np.array([
-            self.axes.get_xbound(),
-            self.axes.get_ybound(),
-            self.axes.get_zbound(),
-        ]).T
-
-        min_lam = (mins - self._origin) / self._direction
-        max_lam = (maxs - self._origin) / self._direction
-
-        valid_points = []
-        for src in min_lam, max_lam:
-            for i, lam in enumerate(src):
-                i_other = [(i + 1) % 3, (i + 2) % 3]
-                p = self._origin + src[i]*self._direction
-                if (mins[i_other,] <= p[i_other,]).all() and (p[i_other,] <= maxs[i_other,]).all():
-                    valid_points.append((lam, p))
-        valid_points.sort(key=lambda t: t[0])
-        self._verts3d = np.stack((valid_points[0][1], valid_points[-1][1]), axis=-1)
-        super().draw(renderer)
-        self.scale = True
 
 
 class _Plotter3d(_Plotter):
