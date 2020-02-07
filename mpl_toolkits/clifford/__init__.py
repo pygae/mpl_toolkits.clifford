@@ -142,7 +142,7 @@ class _Plotter2d(_Plotter):
         linestyles = [_line_style_for_radius(circle.radius) for circle in os]
         col = PatchCollection(c, linestyles=linestyles, **kwargs)
         self._ax.add_collection(col)
-        self._ax._request_autoscale_view()
+        self._ax.autoscale_view(None)
         yield col
 
 

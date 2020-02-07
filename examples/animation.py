@@ -10,6 +10,7 @@ from clifford.g2c import *
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1)
 ax.axis('equal')
+ax.set(xlim=[-2, 2], ylim=[-2, 2], autoscale_on=False)
 
 def basic_animation(fig, *, interval, **kwargs):
     def decorator(f):
