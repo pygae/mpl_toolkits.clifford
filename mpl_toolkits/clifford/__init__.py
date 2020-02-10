@@ -346,5 +346,6 @@ class _Plotter3d(_Plotter):
         ret = []
         for o in os:
             tmesh = icosphere(radius=abs(o.radius))
-            t = Triangulation(tmesh.vertices[:, 0], tmesh.vertices[:, 1], triangles=tmesh.faces)
-            yield self._ax.plot_trisurf(t, tmesh.vertices[:, 2], **kwargs)
+            loc = self._as_point_tuple_3d(o.location)
+            t = Triangulation(loc[0] + tmesh.vertices[:, 0], loc[1] + tmesh.vertices[:, 1], triangles=tmesh.faces)
+            yield self._ax.plot_trisurf(t, loc[2] + tmesh.vertices[:, 2], **kwargs)
