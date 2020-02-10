@@ -10,9 +10,10 @@ import mpl_toolkits.clifford
 from clifford.g3c import *
 
 
-fig = plt.figure()
+fig = plt.figure(figsize=(4, 4))
 ax = fig.add_subplot(1, 1, 1, projection="3d")
 ax.set(xlim=[-1, 1], ylim=[0, 2], zlim=[-1, 1], autoscale_on=False)
+ax.view_init(azim=120)
 
 def basic_animation(fig, *, interval, **kwargs):
     def decorator(f):
@@ -31,6 +32,8 @@ def basic_animation(fig, *, interval, **kwargs):
 
 # Draw a robot base
 C = up(0.2*e1)^up(0.2*e3)^up(-0.2*e1);
+
+trajectory = []
 
 @basic_animation(fig, interval=0.005, save_count=100)
 def animation(t):
@@ -53,10 +56,12 @@ def animation(t):
 
     # The end point
     endpoint = elb0 + R2*0.5*e2*~R2
+    trajectory.append(up(endpoint))
 
     yield from mpl_toolkits.clifford.plot(ax, [up(0), R0*up(0.2*e1)*~R0], color='tab:blue')
     yield from mpl_toolkits.clifford.plot(ax, [C], color='tab:blue')
     yield from mpl_toolkits.clifford.plot(ax, [up(0), up(elb0), up(endpoint)], marker='x', color='tab:orange')
+    yield from mpl_toolkits.clifford.plot(ax, trajectory, color='tab:gray', linewidth=0.5)
 
 # animation.save('test2.gif', writer='imagemagick')
 
