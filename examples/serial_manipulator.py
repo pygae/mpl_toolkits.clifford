@@ -1,6 +1,7 @@
 # from https://enkimute.github.io/ganja.js/examples/coffeeshop.html#AFVs70eea
 
 import math
+from pathlib import Path
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
@@ -63,6 +64,6 @@ def animation(t):
     yield from mpl_toolkits.clifford.plot(ax, [up(0), up(elb0), up(endpoint)], marker='x', color='tab:orange')
     yield from mpl_toolkits.clifford.plot(ax, trajectory, color='tab:gray', linewidth=0.5)
 
-# animation.save('test2.gif', writer='imagemagick')
+# animation.save(Path(__file__).with_suffix('.gif'), writer='imagemagick')
 
 plt.show()

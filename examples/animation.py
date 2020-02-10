@@ -1,5 +1,4 @@
-import functools
-import sys
+from pathlib import Path
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
@@ -38,6 +37,6 @@ def animation(t):
     yield from mpl_toolkits.clifford.plot(ax, [A ^ B ^ einf], color='tab:green')
     yield from mpl_toolkits.clifford.plot(ax, [(A ^ B ^ C) | B], color='tab:purple')
 
-animation.save('test2.gif', writer='imagemagick')
+# animation.save(Path(__file__).with_suffix('.gif'), writer='imagemagick')
 
 plt.show()
