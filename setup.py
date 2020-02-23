@@ -18,7 +18,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Eric Wieser',
-    py_modules=['mpl_toolkits.clifford'],
+    packages=find_packages(),
     namespace_packages=['mpl_toolkits'],
     install_requires=[
         'clifford',
